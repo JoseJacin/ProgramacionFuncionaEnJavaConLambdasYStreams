@@ -8,4 +8,10 @@ public interface Agrupador {
 	
 	int numeroElementos();
 	
+	default void addAll(Collection<?> collection) {
+		for(Object object: collection) {
+			add(object);
+		}
+	}
+
 }
