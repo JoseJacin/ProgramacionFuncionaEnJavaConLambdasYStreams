@@ -157,8 +157,10 @@ Al trabajar con Lambdas, se necesitan diversos interfaces de propósito general,
 Estas funcionales se han añadido en el package java.util.function y hay más de 40 tipos nuevos.
 
 Como por ejemplo:
-> [!NOTE]
-> Information the user should notice even if skimming
+> [NOTA]
+> A partir de aquí entenderemos lo siguiente:
+>**T**: Hace referencia al dominio de la función, es decir, a los valores que acepta.
+>**R**: Hace referencia al recorrido, es decir, al tipo de resultado que produce.
 
 #### Function
 
@@ -166,8 +168,6 @@ Un ejemplo muy general es una función que acepta un objeto y devuelve otro. Est
 
 ```java
 Interface Function<T, R>
-// T representa el dominio de la función, es decir, los valores que acepta
-// R representa el recorrido, es decir, el tipo de resultado que produce.
 
 // El método de la Interface a implementar es apply
 R apply (T t);
@@ -213,7 +213,8 @@ Un operador es un tipo especial de función donde el tipo de dominio (T) es igua
 
 ```java
 Interface UnaryOperator<T>
-// T representa el dominio de la función, es decir, los valores que acepta, que además en este caso es del mismo tipo que el recorrido (R), es decir, es del mismo tipo que el resultado.
+// T y R son del mismo tipo.
+
 f: T -> T
 ```
 
@@ -309,8 +310,7 @@ Un Consumer es un tipo especial de función donde tiene un dominio pero no produ
 
 ```java
 Interface Consumer<T>
-// T representa el dominio de la función, es decir, los valores que acepta
-// En este caso no tiene salida
+// No tiene R
 
 // La función impresor imprime por consola el valor recibido por parámetro (it), no produciendo ninguna salida
 Consumer<String> impresor = (it) -> {System.out.println(it);}
@@ -322,7 +322,8 @@ Un Supplier es un tipo especial de función donde no tiene una entrada pero sí 
 
 ```java
 Interface Suppliert<T>
-// La función generador no tiene entrada, pero produce una salida
+// No tiene T.
+
 Random random = new Randosm();
 Supplier<Integer> generador = () -> random.nextInt();
 ```
@@ -333,7 +334,6 @@ Un Predicate es un tipo especial de función donde su funcionalidad es evaluar u
 
 ```java
 Interface Predicate<T>
-// T representa el dominio de la función, es decir, los valores que acepta
 
 f(x) -> boolean
 
@@ -353,16 +353,185 @@ EL prefijo Binary o Bi se aplica cuando se duplica el número de parámetros de 
 Por ejemplo:
 ```java
 // BinaryOperator se aplica sobre dos parámetros y produce un resultado del mismo tipo que los parámetros
-BinaryOperator<T>            -            f (t, t) -> t
+BinaryOperator<T>    -    f (t, t) -> t
 
 //BiFuncion se aplica sobre dos parámetros (t, u) y produce un resultado (r) 
-BiFunction<T, U, R>        -        f (t, u) -> r
+BiFunction<T, U, R>    -    f (t, u) -> r
 
 //BiPredicate se aplica sobre dos parámetros (t, u)  y produce un resultado boolean.
-BiPredicate<T, U>        -        f (t, u) -> boolean
+BiPredicate<T, U>    -    f (t, u) -> boolean
 
 // También se puede aplicar sobre las funciones de tipos primitivos donde recibe dos parámetros del tipo indicado y produce un resultado del mismo tipo
-IntBinaryOperator        -        f (int, int) -> int
-LongBinaryOperator         -        f (long, long) -> long
-DoubleBinaryOperator        -        f (double, double) -> double
+IntBinaryOperator    -    f (int, int) -> int
+LongBinaryOperator    -    f (long, long) -> long
+DoubleBinaryOperator    -    f (double, double) -> double
+```
+
+### Functional Interfaces
+
+En vez de lambda expressions se pueden utilizar métodos ya existentes.
+
+```java
+// Por ejemplo:
+List<String> lista = Arrays.asList("ab", "b", "ccc");
+
+// Para ordenar un array de Strings según la longitud de los elementos, se puede realizar lo siguiente mediante lambdas expression
+lista.sort((01, 02) -> 01.lenght() - o2.lenght());
+
+// Pero puede darse el caso que ya exista un método que realice dicha comparación en otra clase.
+// Por ejemplo, en una clase Utilidades ya existe un método estático que tiene la misma firma que necesitamos.
+class Utilidades {
+    public static int compare (String o1, String o2) {
+        return o1.lenght() - o2.lenght();
+    }
+}
+
+// La forma para rehusarlo sería la siguiente
+lista.sort((o1, o2) -> Utilidades.compare(o1, o2));
+// El problema de lo anterior es que se ha tenido que reescribir la firma del método en la parte declarativa de la lambda expression
+
+// Para ello, la implementación sería de la siguiente forma:
+lista.sort(Utilidades::compare);
+// A lo anterior se llama Method Reference
+```
+
+#### Method Reference
+
+A Partír de Java 8 se pueden usar Referencias a Métodos de manera funcional.
+
+##### 1 - Sintáxis
+
+```java
+// Esta sintáxis sólo es válida para referenciar métodos estáticos
+Clase::método estático
+```
+
+#### Referencia a un método de una instancia particular
+
+Es posible referenciar a un método no estático
+
+##### 2 - Sintáxis
+
+```java
+nombre de la instancia::método no estático
+```
+
+```java
+// Por ejemplo:
+List<String> lista = Arrays.asList("ab", "b", "ccc");
+
+// Y teniendo la siguiente implementación en una clase Utilidades en la que ya existe un método no estático que tiene la misma firma que necesitamos.
+class Utilidades {
+    public int compare (String o1, String o2) {
+        return o1.lenght() - o2.lenght();
+    }
+}
+
+// Para poder invocar un método no estático se tiene que realizar a partir de una referencia a un objeto determinado, además de la referencia a un objeto de la clase Utilidades (en este caso) para obtener una referencia al método no estático.
+// Se tiene que crear una instancia de la clase  que contiene el método que se quiere invocar
+Utilidades util = new Utilidades();
+lista.sort(util::compare);
+```
+
+#### Referencia a un método de una instancia arbitraria
+
+Es posible referenciar a un método no estático en aquellos métodos que se ejecutan sobre un objeto.
+
+##### 3 - Sintaxis
+
+```java
+nombre de la clase::método no estático
+```
+
+```java
+/// Por ejemplo:
+List<String> lista = Arrays.asList("ab", "b", "ccc");
+
+// Y teniendo la siguiente implementación del método compareToIgnoreCase de la clase String.
+// Es este caso el método compareToIgnoreCase compara el string sobre el que se invoca con el string recibido por parámetro.
+public final class String ... {
+    ...
+    public int compareToIgnoreCase (String str)
+}
+
+//En este caso, el método compareToIgnoreCase se ejecuta cada vez sobre uno de los parametros pasados a compare.
+lista.sort(String::compareToIgnoreCase);
+
+// Para entenderlo de forma más clara, vamos a explicarlo paso a paso para cada uno de los casos.
+int compare(String s1, String s2);
+Se referencia de la siguiente forma --> String::compare --> compare(s1, s2)
+int compareToIgnoreCase (String str); --> String::compareToIgnoreCase --> s1.compareToIgnoreCase(s2);
+```
+
+<style type="text/css">
+</style>
+<table>
+<tr>
+    <th>Método</th>
+    <th>Se referencia</th>
+    <th>Se traduce en</th>
+  </tr>
+<tr>
+<td>
+
+```java
+int compare(String s1, String s2);
+```
+
+</td>
+<td>
+
+```java
+String::compare
+```
+
+</td>
+<td>
+
+```java
+compare(s1, s2)
+```
+
+</td>
+</tr>
+
+<tr>
+<td>
+
+  ```java
+int compareToIgnoreCase (String str);
+  ```
+
+</td>
+<td>
+
+  ```java
+String::compareToIgnoreCase
+  ```
+
+</td>
+<td>
+
+  ```java
+s1.compareToIgnoreCase(s2)
+  ```
+
+</td>
+</tr>
+
+</table>
+
+#### Referencia a un constructor
+
+Es posible referenciar a un constructor.
+
+##### 4 - Sintáxis
+
+```java
+Integer::new
+```
+
+```java
+Function<String, Integer> conversor = Integer::new;
+conversor.apply("3");
 ```
